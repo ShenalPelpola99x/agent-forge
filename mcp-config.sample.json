@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": ["@anthropic-ai/mcp-playwright"],
+      "description": "Browser automation for QA agent — E2E testing, screenshots, DOM inspection"
+    },
+    "github": {
+      "command": "npx",
+      "args": ["@anthropic-ai/mcp-github"],
+      "env": {
+        "GITHUB_TOKEN": "<your-github-token>"
+      },
+      "description": "GitHub API for delivery-manager, product-manager, project-manager agents"
+    }
+  }
+}

@@ -1,0 +1,18 @@
+# Generated platform outputs (rebuild with scripts/build-platforms.ps1)
+# Uncomment the line below if you want to track platform outputs in git:
+# platforms/
+
+# Eval workspace outputs
+**/agent-creator-workspace/
+**/eval-results/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+
+# Node (if any tooling added later)
+node_modules/

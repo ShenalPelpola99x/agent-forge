@@ -1,0 +1,154 @@
+﻿{
+    "agents":  [
+                   {
+                       "version":  "1.0.0",
+                       "model_recommendation":  "sonnet",
+                       "requires_skills":  "dotnet-patterns",
+                       "requires_mcp":  {
+
+                                        },
+                       "name":  "backend-developer",
+                       "platforms":  [
+                                         "copilot",
+                                         "claude",
+                                         "codex",
+                                         "cursor",
+                                         "windsurf"
+                                     ],
+                       "description":  ".NET backend development specialist for architecture design, API implementation, Entity Framework Core, SOLID principles, and design patterns. Use when building .NET APIs, designing service architectures, implementing repository patterns, configuring EF Core, writing middleware, or reviewing backend code. Triggers on mentions of .NET, C#, ASP.NET, Web API, Entity Framework, EF Core, SOLID, clean architecture, CQRS, repository pattern, or backend development.",
+                       "tags":  [
+                                    "dotnet",
+                                    "backend",
+                                    "csharp",
+                                    "architecture"
+                                ]
+                   },
+                   {
+                       "version":  "1.0.0",
+                       "model_recommendation":  "sonnet",
+                       "requires_skills":  {
+
+                                           },
+                       "requires_mcp":  "github",
+                       "name":  "delivery-manager",
+                       "platforms":  [
+                                         "copilot",
+                                         "claude",
+                                         "codex",
+                                         "cursor",
+                                         "windsurf"
+                                     ],
+                       "description":  "Delivery management specialist for assessing project progress, reviewing PRs for goal alignment, identifying delivery risks, and tracking milestones. Use when evaluating project health, reviewing PRs against sprint goals, creating delivery risk assessments, or tracking team velocity. Triggers on mentions of delivery, sprint progress, milestone tracking, delivery risk, goal alignment, or project health.",
+                       "tags":  [
+                                    "delivery",
+                                    "project-management",
+                                    "risk-assessment"
+                                ]
+                   },
+                   {
+                       "version":  "1.0.0",
+                       "model_recommendation":  "sonnet",
+                       "requires_skills":  "devops-pipelines",
+                       "requires_mcp":  {
+
+                                        },
+                       "name":  "devops",
+                       "platforms":  [
+                                         "copilot",
+                                         "claude",
+                                         "codex",
+                                         "cursor",
+                                         "windsurf"
+                                     ],
+                       "description":  "DevOps and infrastructure specialist for CI/CD pipelines, Docker containerization, infrastructure as code, deployment automation, and monitoring setup. Use when creating or modifying pipelines, writing Dockerfiles, configuring Terraform/Bicep, setting up monitoring, or troubleshooting build failures. Triggers on mentions of DevOps, CI/CD, pipeline, Docker, Kubernetes, Terraform, Bicep, GitHub Actions, Azure DevOps, deployment, infrastructure, or build automation.",
+                       "tags":  [
+                                    "devops",
+                                    "cicd",
+                                    "docker",
+                                    "infrastructure"
+                                ]
+                   },
+                   {
+                       "version":  "1.0.0",
+                       "model_recommendation":  "sonnet",
+                       "requires_skills":  {
+
+                                           },
+                       "requires_mcp":  "github",
+                       "name":  "product-manager",
+                       "platforms":  [
+                                         "copilot",
+                                         "claude",
+                                         "codex",
+                                         "cursor",
+                                         "windsurf"
+                                     ],
+                       "description":  "Product management specialist for issue creation, feature prioritization, user story writing, and business-value alignment. Use when creating issues, writing user stories, prioritizing features, defining acceptance criteria, or evaluating feature requests against product goals. Triggers on mentions of product management, user stories, feature prioritization, backlog grooming, acceptance criteria, or business value.",
+                       "tags":  [
+                                    "product-management",
+                                    "user-stories",
+                                    "prioritization"
+                                ]
+                   },
+                   {
+                       "version":  "1.0.0",
+                       "model_recommendation":  "sonnet",
+                       "requires_skills":  {
+
+                                           },
+                       "requires_mcp":  "github",
+                       "name":  "project-manager",
+                       "platforms":  [
+                                         "copilot",
+                                         "claude",
+                                         "codex",
+                                         "cursor",
+                                         "windsurf"
+                                     ],
+                       "description":  "Project management specialist for converting user stories into execution plans with task dependencies, effort estimates, and sprint scheduling. Use when breaking down work into tasks, creating execution plans, identifying dependencies, estimating effort, or scheduling sprints. Triggers on mentions of project planning, task breakdown, execution plan, dependencies, sprint planning, or work estimation.",
+                       "tags":  [
+                                    "project-management",
+                                    "planning",
+                                    "execution"
+                                ]
+                   },
+                   {
+                       "version":  "1.0.0",
+                       "model_recommendation":  "sonnet",
+                       "requires_skills":  "playwright-testing",
+                       "requires_mcp":  "playwright",
+                       "name":  "qa-tester",
+                       "platforms":  [
+                                         "copilot",
+                                         "claude",
+                                         "codex",
+                                         "cursor",
+                                         "windsurf"
+                                     ],
+                       "description":  "Playwright E2E testing specialist. Use when writing browser tests, debugging test failures, analyzing test coverage, creating page object models, setting up test infrastructure, or reviewing test quality. Triggers on mentions of Playwright, E2E, end-to-end, browser testing, test automation, test coverage, or QA.",
+                       "tags":  [
+                                    "testing",
+                                    "playwright",
+                                    "qa",
+                                    "e2e"
+                                ]
+                   }
+               ],
+    "skills":  [
+
+               ],
+    "prompts":  [
+                    {
+                        "name":  "create-issue",
+                        "description":  "Create a well-structured GitHub issue from a bug report, feature request, or task description"
+                    },
+                    {
+                        "name":  "plan-sprint",
+                        "description":  "Plan a sprint by selecting items from the backlog, estimating effort, and creating a balanced sprint plan"
+                    },
+                    {
+                        "name":  "risk-assessment",
+                        "description":  "Assess delivery risks for a project or sprint by analyzing open items, blockers, dependencies, and velocity trends"
+                    }
+                ]
+}
