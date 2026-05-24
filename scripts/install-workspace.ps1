@@ -10,10 +10,14 @@
     Target platform(s): copilot, claude, codex, cursor, windsurf, or all.
 .PARAMETER Agents
     Optional. Comma-separated list of agent names to install. If omitted, installs all.
+.PARAMETER AgentNamePrefix
+    Optional prefix added to installed Copilot/Claude/Cursor agent names.
+    Useful when distinguishing variants (for example: cp-, ws-, team-).
 .PARAMETER Force
     Overwrite existing files.
 .EXAMPLE
     .\install-workspace.ps1 -Path "C:\projects\myapp" -Platform copilot
+    .\install-workspace.ps1 -Path "C:\projects\myapp" -Platform copilot -AgentNamePrefix "ws-"
     .\install-workspace.ps1 -Path "C:\projects\myapp" -Platform all -Agents qa-tester,devops
 #>
 param(
@@ -25,6 +29,8 @@ param(
     [string]$Platform,
 
     [string]$Agents,
+
+    [string]$AgentNamePrefix = "",
 
     [switch]$Force
 )
@@ -44,7 +50,7 @@ function Copy-SafeFile {
     param([string]$Source, [string]$Dest)
     
     if ((Test-Path $Dest) -and -not $Force) {
-        Write-Host "  ⏭️  Skipped (exists): $Dest" -ForegroundColor Yellow
+        Write-Host "  [SKIP] Exists: $Dest" -ForegroundColor Yellow
         return
     }
     $destDir = Split-Path $Dest -Parent
@@ -52,7 +58,32 @@ function Copy-SafeFile {
         New-Item -ItemType Directory -Path $destDir -Force | Out-Null
     }
     Copy-Item $Source $Dest -Force
-    Write-Host "  ✅ $Dest" -ForegroundColor Green
+    Write-Host "  [OK] $Dest" -ForegroundColor Green
+}
+
+function Copy-AgentWithPrefix {
+    param([string]$Source, [string]$Dest, [string]$Prefix)
+
+    if ((Test-Path $Dest) -and -not $Force) {
+        Write-Host "  [SKIP] Exists: $Dest" -ForegroundColor Yellow
+        return
+    }
+
+    $destDir = Split-Path $Dest -Parent
+    if (-not (Test-Path $destDir)) {
+        New-Item -ItemType Directory -Path $destDir -Force | Out-Null
+    }
+
+    $content = Get-Content -Path $Source -Raw
+    $nameMatch = [regex]::Match($content, '(?m)^name:\s*(.+)$')
+    if ($nameMatch.Success) {
+        $originalName = $nameMatch.Groups[1].Value.Trim()
+        $updatedName = "$Prefix$originalName"
+        $content = [regex]::Replace($content, '(?m)^name:\s*.+$', "name: $updatedName", 1)
+    }
+
+    Set-Content -Path $Dest -Value $content -Encoding UTF8
+    Write-Host "  [OK] $Dest (name prefixed: $Prefix)" -ForegroundColor Green
 }
 
 function Should-Include {
@@ -73,7 +104,12 @@ function Install-CopilotWorkspace {
     # Agents
     foreach ($file in (Get-ChildItem "$src\agents\*.agent.md" -ErrorAction SilentlyContinue)) {
         if (Should-Include $file.BaseName) {
-            Copy-SafeFile $file.FullName (Join-Path $Path ".github\agents\$($file.Name)")
+            $dest = Join-Path $Path ".github\agents\$($file.Name)"
+            if ([string]::IsNullOrWhiteSpace($AgentNamePrefix)) {
+                Copy-SafeFile $file.FullName $dest
+            } else {
+                Copy-AgentWithPrefix -Source $file.FullName -Dest $dest -Prefix $AgentNamePrefix
+            }
         }
     }
 
@@ -103,7 +139,12 @@ function Install-ClaudeWorkspace {
     # Agents
     foreach ($file in (Get-ChildItem "$src\agents\*.md" -ErrorAction SilentlyContinue)) {
         if (Should-Include $file.BaseName) {
-            Copy-SafeFile $file.FullName (Join-Path $Path ".claude\agents\$($file.Name)")
+            $dest = Join-Path $Path ".claude\agents\$($file.Name)"
+            if ([string]::IsNullOrWhiteSpace($AgentNamePrefix)) {
+                Copy-SafeFile $file.FullName $dest
+            } else {
+                Copy-AgentWithPrefix -Source $file.FullName -Dest $dest -Prefix $AgentNamePrefix
+            }
         }
     }
 
@@ -138,7 +179,12 @@ function Install-CursorWorkspace {
     # .cursor/rules/*.mdc
     foreach ($file in (Get-ChildItem "$src\rules\*.mdc" -ErrorAction SilentlyContinue)) {
         if (Should-Include $file.BaseName) {
-            Copy-SafeFile $file.FullName (Join-Path $Path ".cursor\rules\$($file.Name)")
+            $dest = Join-Path $Path ".cursor\rules\$($file.Name)"
+            if ([string]::IsNullOrWhiteSpace($AgentNamePrefix)) {
+                Copy-SafeFile $file.FullName $dest
+            } else {
+                Copy-AgentWithPrefix -Source $file.FullName -Dest $dest -Prefix $AgentNamePrefix
+            }
         }
     }
 }

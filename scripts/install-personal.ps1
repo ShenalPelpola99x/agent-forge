@@ -6,16 +6,22 @@
     skills, instructions, and prompts are available in all workspaces.
 .PARAMETER Platform
     Target platform: copilot, claude, or all.
+.PARAMETER AgentNamePrefix
+    Optional prefix added to agent names in installed files (Copilot only).
+    Useful for distinguishing personal/workspace or platform variants.
 .PARAMETER Force
     Remove existing symlinks before creating new ones.
 .EXAMPLE
     .\install-personal.ps1 -Platform copilot
+    .\install-personal.ps1 -Platform copilot -AgentNamePrefix "cp-"
     .\install-personal.ps1 -Platform all
 #>
 param(
     [Parameter(Mandatory)]
     [ValidateSet("copilot", "claude", "all")]
     [string]$Platform,
+
+    [string]$AgentNamePrefix = "",
 
     [switch]$Force
 )
@@ -24,15 +30,45 @@ $ErrorActionPreference = "Stop"
 $root = Split-Path $PSScriptRoot -Parent
 $platformsDir = Join-Path $root "platforms"
 
+function Copy-AgentWithPrefix {
+    param([string]$Source, [string]$Dest, [string]$Prefix)
+
+    if (Test-Path $Dest) {
+        if (-not $Force) {
+            Write-Host "  [SKIP] Exists: $Dest" -ForegroundColor Yellow
+            return
+        }
+        # If destination is an existing symlink, remove it so we do not rewrite the link target.
+        Remove-Item $Dest -Force -Recurse
+        Write-Host "  [DEL] Removed existing: $Dest" -ForegroundColor Yellow
+    }
+
+    $destDir = Split-Path $Dest -Parent
+    if (-not (Test-Path $destDir)) {
+        New-Item -ItemType Directory -Path $destDir -Force | Out-Null
+    }
+
+    $content = Get-Content -Path $Source -Raw
+    $nameMatch = [regex]::Match($content, '(?m)^name:\s*(.+)$')
+    if ($nameMatch.Success) {
+        $originalName = $nameMatch.Groups[1].Value.Trim()
+        $updatedName = "$Prefix$originalName"
+        $content = [regex]::Replace($content, '(?m)^name:\s*.+$', "name: $updatedName", 1)
+    }
+
+    Set-Content -Path $Dest -Value $content -Encoding UTF8
+    Write-Host "  [OK] $Dest (name prefixed: $Prefix)" -ForegroundColor Green
+}
+
 function New-SymlinkSafe {
     param([string]$Link, [string]$Target, [switch]$IsDirectory)
     
     if (Test-Path $Link) {
         if ($Force) {
             Remove-Item $Link -Force -Recurse
-            Write-Host "  🗑️  Removed existing: $Link" -ForegroundColor Yellow
+            Write-Host "  [DEL] Removed existing: $Link" -ForegroundColor Yellow
         } else {
-            Write-Host "  ⏭️  Skipped (exists): $Link" -ForegroundColor Yellow
+            Write-Host "  [SKIP] Exists: $Link" -ForegroundColor Yellow
             return
         }
     }
@@ -42,12 +78,23 @@ function New-SymlinkSafe {
         New-Item -ItemType Directory -Path $parentDir -Force | Out-Null
     }
 
-    if ($IsDirectory) {
-        New-Item -ItemType Junction -Path $Link -Target $Target | Out-Null
-    } else {
-        New-Item -ItemType SymbolicLink -Path $Link -Target $Target | Out-Null
+    try {
+        if ($IsDirectory) {
+            New-Item -ItemType Junction -Path $Link -Target $Target | Out-Null
+        } else {
+            New-Item -ItemType SymbolicLink -Path $Link -Target $Target | Out-Null
+        }
+        Write-Host "  [OK] $Link -> $Target" -ForegroundColor Green
     }
-    Write-Host "  ✅ $Link → $Target" -ForegroundColor Green
+    catch {
+        # Some systems require elevation for symbolic links. Fall back to copy so install still succeeds.
+        if ($IsDirectory) {
+            Copy-Item -Path $Target -Destination $Link -Recurse -Force
+        } else {
+            Copy-Item -Path $Target -Destination $Link -Force
+        }
+        Write-Host "  [OK] $Link (copied fallback)" -ForegroundColor Green
+    }
 }
 
 # ---------- Copilot ----------
@@ -63,7 +110,11 @@ function Install-Copilot {
     if (Test-Path $agentsDir) {
         foreach ($file in (Get-ChildItem "$agentsDir\*.agent.md")) {
             $link = Join-Path $userPrompts $file.Name
-            New-SymlinkSafe -Link $link -Target $file.FullName
+            if ([string]::IsNullOrWhiteSpace($AgentNamePrefix)) {
+                New-SymlinkSafe -Link $link -Target $file.FullName
+            } else {
+                Copy-AgentWithPrefix -Source $file.FullName -Dest $link -Prefix $AgentNamePrefix
+            }
         }
     }
 
@@ -95,7 +146,7 @@ function Install-Copilot {
         }
     }
 
-    Write-Host "`n✅ Copilot install complete" -ForegroundColor Green
+    Write-Host "`n[OK] Copilot install complete" -ForegroundColor Green
 }
 
 # ---------- Claude Code ----------
@@ -124,7 +175,7 @@ function Install-Claude {
         }
     }
 
-    Write-Host "`n✅ Claude Code install complete" -ForegroundColor Green
+    Write-Host "`n[OK] Claude Code install complete" -ForegroundColor Green
 }
 
 # ---------- Main ----------

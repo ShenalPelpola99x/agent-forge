@@ -18,6 +18,7 @@ A comprehensive, multi-platform agent ecosystem for GitHub Copilot, Claude Code,
 8. [Platform Support](#platform-support)
 9. [Building & Deployment](#building--deployment)
 10. [Advanced Usage](#advanced-usage)
+11. [Uninstalling](#uninstalling)
 
 ---
 
@@ -60,6 +61,30 @@ powershell -ExecutionPolicy Bypass -File .\scripts\install-personal.ps1 -Platfor
 ```
 
 **Result**: Open any repo in VS Code → `@qa-tester` and other agents are immediately available.
+
+### Distinguish Personal vs Workspace Agents
+
+If you install both personal and workspace variants, use a visible name prefix so the picker shows which one is which.
+
+```powershell
+# Personal/global Copilot agents appear as cp-qa-tester, cp-devops, etc.
+powershell -ExecutionPolicy Bypass -File .\scripts\install-personal.ps1 `
+  -Platform copilot `
+  -AgentNamePrefix "cp-" `
+  -Force
+
+# Workspace Copilot agents appear as ws-qa-tester, ws-devops, etc.
+powershell -ExecutionPolicy Bypass -File .\scripts\install-workspace.ps1 `
+  -Path "C:\path\to\your\project" `
+  -Platform copilot `
+  -AgentNamePrefix "ws-" `
+  -Force
+```
+
+Recommended prefixes:
+- `cp-` for personal Copilot installs
+- `ws-` for workspace installs
+- `team-` for shared team baselines
 
 ### Workspace Install (per-project)
 
@@ -156,8 +181,9 @@ agent-forge/
 ├── scripts/                            # Build & install automation
 │   ├── build-platforms.ps1             # Reads canonical/, generates platforms/
 │   ├── validate-agent.ps1              # Validates canonical agent files
-│   ├── install-personal.ps1            # Symlinks to user profile for all workspaces
-│   └── install-workspace.ps1           # Copies to workspace for per-project use
+│   ├── install-personal.ps1            # Installs to user profile for all workspaces
+│   ├── install-workspace.ps1           # Copies to workspace for per-project use
+│   └── uninstall-personal.ps1          # Removes personal/global installs
 
 └── docs/                               # Documentation (future: dependency graph, etc.)
 ```
@@ -205,8 +231,6 @@ Use the **agent-creator** skill:
 ```
 
 ---
-
-## Skills
 
 ## Skills
 
@@ -271,6 +295,12 @@ Install to your VS Code user profile. Agents available in **every repo** without
 ```powershell
 cd D:\Users\ShenalP\source\repos\agent-forge
 powershell -ExecutionPolicy Bypass -File .\scripts\install-personal.ps1 -Platform copilot
+
+# Optional: make personal agents easy to identify in the picker
+powershell -ExecutionPolicy Bypass -File .\scripts\install-personal.ps1 `
+  -Platform copilot `
+  -AgentNamePrefix "cp-" `
+  -Force
 ```
 
 **Locations**:
@@ -287,6 +317,13 @@ cd D:\Users\ShenalP\source\repos\agent-forge
 powershell -ExecutionPolicy Bypass -File .\scripts\install-workspace.ps1 `
   -Path "C:\path\to\project" `
   -Platform copilot
+
+# Optional: label workspace variants distinctly in the picker
+powershell -ExecutionPolicy Bypass -File .\scripts\install-workspace.ps1 `
+  -Path "C:\path\to\project" `
+  -Platform copilot `
+  -AgentNamePrefix "ws-" `
+  -Force
 ```
 
 **Locations** (inside project):
@@ -415,6 +452,29 @@ Install only specific agents for a workspace:
   -Platform copilot
 ```
 
+### Personal Uninstall
+
+Remove globally installed agent-forge assets from your user profile:
+
+```powershell
+# Remove Copilot-only personal install
+powershell -ExecutionPolicy Bypass -File .\scripts\uninstall-personal.ps1 -Platform copilot
+
+# Remove Claude-only personal install
+powershell -ExecutionPolicy Bypass -File .\scripts\uninstall-personal.ps1 -Platform claude
+
+# Remove everything installed by install-personal.ps1
+powershell -ExecutionPolicy Bypass -File .\scripts\uninstall-personal.ps1 -Platform all
+```
+
+This removes:
+- Copilot agents from `%APPDATA%\Code\User\prompts`
+- Copilot instructions from `%APPDATA%\Code\User\prompts\instructions`
+- Copilot prompts from `%APPDATA%\Code\User\prompts`
+- Copilot skills from `%USERPROFILE%\.copilot\skills`
+- Claude agents from `%USERPROFILE%\.claude\agents`
+- Claude commands from `%USERPROFILE%\.claude\commands`
+
 ### View Registry
 
 All agents, skills, and metadata are in `registry.json`:
@@ -466,6 +526,30 @@ If agents require MCP servers (like Playwright for qa-tester), configure in your
 
 ---
 
+## Uninstalling
+
+Use `scripts/uninstall-personal.ps1` to remove anything installed globally by `install-personal.ps1`.
+
+```powershell
+cd D:\Users\ShenalP\source\repos\agent-forge
+
+# Remove all personal installs
+powershell -ExecutionPolicy Bypass -File .\scripts\uninstall-personal.ps1 -Platform all
+```
+
+If you installed workspace files with `install-workspace.ps1`, remove the generated files directly from the target project:
+- `.github/agents/`
+- `.github/instructions/`
+- `.github/prompts/`
+- `.claude/agents/`
+- `.claude/commands/`
+- `.cursor/rules/`
+- `.cursorrules`
+- `.windsurfrules`
+- `AGENTS.md`
+
+---
+
 ## Contributing
 
 The agents and skills in this repo are part of a broader ecosystem. To improve:
@@ -492,10 +576,13 @@ A: No. Edit `canonical/` only. Run `build-platforms.ps1` to regenerate platforms
 A: Agents: yes (they're just markdown). Scripts: PowerShell scripts assume Windows. Convert scripts to bash for Unix.
 
 **Q: What if I have both Copilot (personal) and workspace installs?**  
-A: Personal install wins (it's loaded first in VS Code). Workspace installs override for that repo only.
+A: Use `-AgentNamePrefix` when installing so the picker shows distinct names such as `cp-qa-tester` and `ws-qa-tester`.
 
 **Q: How do I update agents after install?**  
 A: Edit `canonical/` → run `build-platforms.ps1` → run install script again with `-Force` flag.
+
+**Q: How do I remove globally installed agents and skills?**  
+A: Run `powershell -ExecutionPolicy Bypass -File .\scripts\uninstall-personal.ps1 -Platform all`.
 
 **Q: Can agents spawn other agents as subagents?**  
 A: Yes, on Copilot and Claude Code. Configure in `subagents:` field. See `references/subagent-orchestration.md` for patterns.
@@ -505,40 +592,3 @@ A: Yes, on Copilot and Claude Code. Configure in `subagents:` field. See `refere
 ## Contact
 
 Questions or feedback? Check the `canonical/` folder for detailed references, or review the individual agent descriptions above.
-| **product-manager** | Issue creation, prioritization, business-value alignment |
-| **project-manager** | User stories → execution plans with dependencies |
-| **devops** | CI/CD, Docker, IaC, monitoring automation |
-| **backend-developer** | .NET architecture, SOLID, EF Core, design patterns |
-
-## Skills
-
-| Skill | Description |
-|-------|-------------|
-| **agent-creator** | Create custom agents for all 5 AI platforms |
-| **playwright-testing** | Playwright test workflow + references |
-| **dotnet-patterns** | .NET architecture patterns + references |
-| **devops-pipelines** | CI/CD pipeline templates |
-
-## Platform Support
-
-| Platform | Agents | Skills | Instructions | Rules |
-|----------|--------|--------|-------------|-------|
-| GitHub Copilot | ✅ | ✅ | ✅ | ✅ |
-| Claude Code | ✅ | ✅ (commands) | ✅ | ✅ |
-| OpenAI Codex | ✅ (AGENTS.md) | — | ✅ | ✅ |
-| Cursor | ✅ (.mdc) | — | ✅ (.mdc) | ✅ |
-| Windsurf | ✅ (rules) | — | ✅ (rules) | ✅ |
-
-## Building
-
-```powershell
-# Rebuild all platform outputs from canonical sources
-.\scripts\build-platforms.ps1
-
-# Validate an agent file
-.\scripts\validate-agent.ps1 -Path canonical\agents\qa-tester.md
-```
-
-## License
-
-Private — internal use only.
