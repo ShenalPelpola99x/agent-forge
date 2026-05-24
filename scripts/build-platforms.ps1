@@ -54,10 +54,7 @@ function Parse-Frontmatter {
 
 function Get-Body {
     param([string]$Content)
-    if ($Content -match "^---\s*\r?\n[\s\S]*?\r?\n---\s*\r?\n(.*)$") {
-        return $Matches[1]
-    }
-    return $Content
+    return ($Content -replace "^---\s*\r?\n[\s\S]*?\r?\n---\s*\r?\n?", "")
 }
 
 # ---------- Build Agents ----------
@@ -84,12 +81,12 @@ foreach ($file in $agentFiles) {
     $copilotTools = @()
     if ($fm["tools"] -is [array]) { $copilotTools = $fm["tools"] }
     $toolsYaml = if ($copilotTools.Count -gt 0) {
-        "`ntools:`n" + ($copilotTools | ForEach-Object { "  - $_" }) -join "`n"
+        "`ntools:`n" + (($copilotTools | ForEach-Object { "  - $_" }) -join "`n")
     } else { "" }
     
     $agentsYaml = ""
     if ($fm["subagents"] -is [array] -and $fm["subagents"].Count -gt 0) {
-        $agentsYaml = "`nagents:`n" + ($fm["subagents"] | ForEach-Object { "  - $_" }) -join "`n"
+        $agentsYaml = "`nagents:`n" + (($fm["subagents"] | ForEach-Object { "  - $_" }) -join "`n")
     }
     
     $modelYaml = if ($fm["model"]) { "`nmodel: $($fm["model"])" } else { "" }

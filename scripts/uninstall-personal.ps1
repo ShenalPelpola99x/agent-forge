@@ -32,6 +32,38 @@ function Remove-PathSafe {
     Write-Host "  [DEL] $PathToRemove" -ForegroundColor Green
 }
 
+function Remove-AgentVariants {
+    param([string]$Directory, [string]$CanonicalFileName)
+
+    if (-not (Test-Path $Directory)) {
+        return
+    }
+
+    $pattern = ""
+    if ($CanonicalFileName -match '^(?<stem>.+?)\.agent\.md$') {
+        $stem = [regex]::Escape($Matches['stem'])
+        $pattern = "^(?:.+-)?${stem}(?:-.+)?\.agent\.md$"
+    }
+    elseif ($CanonicalFileName -match '^(?<stem>.+?)\.mdc$') {
+        $stem = [regex]::Escape($Matches['stem'])
+        $pattern = "^(?:.+-)?${stem}(?:-.+)?\.mdc$"
+    }
+    elseif ($CanonicalFileName -match '^(?<stem>.+?)\.md$') {
+        $stem = [regex]::Escape($Matches['stem'])
+        $pattern = "^(?:.+-)?${stem}(?:-.+)?\.md$"
+    }
+    else {
+        $escapedName = [regex]::Escape($CanonicalFileName)
+        $pattern = "(^.+-)?$escapedName$"
+    }
+
+    foreach ($entry in (Get-ChildItem -Path $Directory -File -ErrorAction SilentlyContinue)) {
+        if ($entry.Name -match $pattern) {
+            Remove-PathSafe -PathToRemove $entry.FullName
+        }
+    }
+}
+
 function Uninstall-Copilot {
     Write-Host "`n=== Removing GitHub Copilot files ===" -ForegroundColor Cyan
 
@@ -41,7 +73,7 @@ function Uninstall-Copilot {
     $agentsDir = Join-Path $copilotDir "agents"
     if (Test-Path $agentsDir) {
         foreach ($file in (Get-ChildItem "$agentsDir\*.agent.md" -File)) {
-            Remove-PathSafe -PathToRemove (Join-Path $userPrompts $file.Name)
+            Remove-AgentVariants -Directory $userPrompts -CanonicalFileName $file.Name
         }
     }
 
@@ -79,7 +111,7 @@ function Uninstall-Claude {
     $agentsDir = Join-Path $claudeDir "agents"
     if (Test-Path $agentsDir) {
         foreach ($file in (Get-ChildItem "$agentsDir\*.md" -File)) {
-            Remove-PathSafe -PathToRemove (Join-Path $claudeHome "agents\$($file.Name)")
+            Remove-AgentVariants -Directory (Join-Path $claudeHome "agents") -CanonicalFileName $file.Name
         }
     }
 

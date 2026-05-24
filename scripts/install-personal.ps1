@@ -9,11 +9,15 @@
 .PARAMETER AgentNamePrefix
     Optional prefix added to agent names in installed files (Copilot only).
     Useful for distinguishing personal/workspace or platform variants.
+.PARAMETER AgentNameSuffix
+    Optional suffix added to agent names in installed files.
+    Useful for distinguishing platform variants (for example: -claude, -copilot).
 .PARAMETER Force
     Remove existing symlinks before creating new ones.
 .EXAMPLE
     .\install-personal.ps1 -Platform copilot
     .\install-personal.ps1 -Platform copilot -AgentNamePrefix "cp-"
+    .\install-personal.ps1 -Platform claude -AgentNameSuffix "-claude"
     .\install-personal.ps1 -Platform all
 #>
 param(
@@ -23,6 +27,8 @@ param(
 
     [string]$AgentNamePrefix = "",
 
+    [string]$AgentNameSuffix = "",
+
     [switch]$Force
 )
 
@@ -30,8 +36,35 @@ $ErrorActionPreference = "Stop"
 $root = Split-Path $PSScriptRoot -Parent
 $platformsDir = Join-Path $root "platforms"
 
-function Copy-AgentWithPrefix {
-    param([string]$Source, [string]$Dest, [string]$Prefix)
+function Get-DecoratedFileName {
+    param([string]$FileName, [string]$Prefix, [string]$Suffix)
+
+    if ([string]::IsNullOrWhiteSpace($Prefix) -and [string]::IsNullOrWhiteSpace($Suffix)) {
+        return $FileName
+    }
+
+    $safePrefix = if ([string]::IsNullOrWhiteSpace($Prefix)) { "" } else { $Prefix }
+    $safeSuffix = if ([string]::IsNullOrWhiteSpace($Suffix)) { "" } else { $Suffix }
+
+    if ($FileName -match '^(?<stem>.+?)\.agent\.md$') {
+        return "$safePrefix$($Matches['stem'])$safeSuffix.agent.md"
+    }
+
+    if ($FileName -match '^(?<stem>.+?)\.mdc$') {
+        return "$safePrefix$($Matches['stem'])$safeSuffix.mdc"
+    }
+
+    if ($FileName -match '^(?<stem>.+?)\.md$') {
+        return "$safePrefix$($Matches['stem'])$safeSuffix.md"
+    }
+
+    $extension = [System.IO.Path]::GetExtension($FileName)
+    $stem = [System.IO.Path]::GetFileNameWithoutExtension($FileName)
+    return "$safePrefix$stem$safeSuffix$extension"
+}
+
+function Copy-AgentWithAffixes {
+    param([string]$Source, [string]$Dest, [string]$Prefix, [string]$Suffix)
 
     if (Test-Path $Dest) {
         if (-not $Force) {
@@ -52,12 +85,14 @@ function Copy-AgentWithPrefix {
     $nameMatch = [regex]::Match($content, '(?m)^name:\s*(.+)$')
     if ($nameMatch.Success) {
         $originalName = $nameMatch.Groups[1].Value.Trim()
-        $updatedName = "$Prefix$originalName"
+        $safePrefix = if ([string]::IsNullOrWhiteSpace($Prefix)) { "" } else { $Prefix }
+        $safeSuffix = if ([string]::IsNullOrWhiteSpace($Suffix)) { "" } else { $Suffix }
+        $updatedName = "$safePrefix$originalName$safeSuffix"
         $content = [regex]::Replace($content, '(?m)^name:\s*.+$', "name: $updatedName", 1)
     }
 
     Set-Content -Path $Dest -Value $content -Encoding UTF8
-    Write-Host "  [OK] $Dest (name prefixed: $Prefix)" -ForegroundColor Green
+    Write-Host "  [OK] $Dest (name affixes: '$Prefix' + '$Suffix')" -ForegroundColor Green
 }
 
 function New-SymlinkSafe {
@@ -109,11 +144,12 @@ function Install-Copilot {
     $agentsDir = Join-Path $copilotDir "agents"
     if (Test-Path $agentsDir) {
         foreach ($file in (Get-ChildItem "$agentsDir\*.agent.md")) {
-            $link = Join-Path $userPrompts $file.Name
-            if ([string]::IsNullOrWhiteSpace($AgentNamePrefix)) {
+            $installedName = Get-DecoratedFileName -FileName $file.Name -Prefix $AgentNamePrefix -Suffix $AgentNameSuffix
+            $link = Join-Path $userPrompts $installedName
+            if ([string]::IsNullOrWhiteSpace($AgentNamePrefix) -and [string]::IsNullOrWhiteSpace($AgentNameSuffix)) {
                 New-SymlinkSafe -Link $link -Target $file.FullName
             } else {
-                Copy-AgentWithPrefix -Source $file.FullName -Dest $link -Prefix $AgentNamePrefix
+                Copy-AgentWithAffixes -Source $file.FullName -Dest $link -Prefix $AgentNamePrefix -Suffix $AgentNameSuffix
             }
         }
     }
@@ -161,8 +197,13 @@ function Install-Claude {
     $agentsDir = Join-Path $claudeDir "agents"
     if (Test-Path $agentsDir) {
         foreach ($file in (Get-ChildItem "$agentsDir\*.md")) {
-            $link = Join-Path $claudeHome "agents\$($file.Name)"
-            New-SymlinkSafe -Link $link -Target $file.FullName
+            $installedName = Get-DecoratedFileName -FileName $file.Name -Prefix $AgentNamePrefix -Suffix $AgentNameSuffix
+            $link = Join-Path $claudeHome "agents\$installedName"
+            if ([string]::IsNullOrWhiteSpace($AgentNamePrefix) -and [string]::IsNullOrWhiteSpace($AgentNameSuffix)) {
+                New-SymlinkSafe -Link $link -Target $file.FullName
+            } else {
+                Copy-AgentWithAffixes -Source $file.FullName -Dest $link -Prefix $AgentNamePrefix -Suffix $AgentNameSuffix
+            }
         }
     }
 

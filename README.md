@@ -64,13 +64,19 @@ powershell -ExecutionPolicy Bypass -File .\scripts\install-personal.ps1 -Platfor
 
 ### Distinguish Personal vs Workspace Agents
 
-If you install both personal and workspace variants, use a visible name prefix so the picker shows which one is which.
+If you install both personal and workspace variants, use a visible name prefix and/or suffix so the picker shows which one is which.
 
 ```powershell
 # Personal/global Copilot agents appear as cp-qa-tester, cp-devops, etc.
 powershell -ExecutionPolicy Bypass -File .\scripts\install-personal.ps1 `
   -Platform copilot `
   -AgentNamePrefix "cp-" `
+  -Force
+
+# Personal/global Claude agents appear as qa-tester-claude, devops-claude, etc.
+powershell -ExecutionPolicy Bypass -File .\scripts\install-personal.ps1 `
+  -Platform claude `
+  -AgentNameSuffix "-claude" `
   -Force
 
 # Workspace Copilot agents appear as ws-qa-tester, ws-devops, etc.
@@ -85,6 +91,10 @@ Recommended prefixes:
 - `cp-` for personal Copilot installs
 - `ws-` for workspace installs
 - `team-` for shared team baselines
+
+Recommended suffixes:
+- `-claude` for Claude variants
+- `-copilot` for Copilot variants
 
 ### Workspace Install (per-project)
 
@@ -301,6 +311,12 @@ powershell -ExecutionPolicy Bypass -File .\scripts\install-personal.ps1 `
   -Platform copilot `
   -AgentNamePrefix "cp-" `
   -Force
+
+# Optional: suffix by platform
+powershell -ExecutionPolicy Bypass -File .\scripts\install-personal.ps1 `
+  -Platform claude `
+  -AgentNameSuffix "-claude" `
+  -Force
 ```
 
 **Locations**:
@@ -323,6 +339,13 @@ powershell -ExecutionPolicy Bypass -File .\scripts\install-workspace.ps1 `
   -Path "C:\path\to\project" `
   -Platform copilot `
   -AgentNamePrefix "ws-" `
+  -Force
+
+# Optional: suffix workspace variants by platform
+powershell -ExecutionPolicy Bypass -File .\scripts\install-workspace.ps1 `
+  -Path "C:\path\to\project" `
+  -Platform claude `
+  -AgentNameSuffix "-claude" `
   -Force
 ```
 
@@ -576,7 +599,7 @@ A: No. Edit `canonical/` only. Run `build-platforms.ps1` to regenerate platforms
 A: Agents: yes (they're just markdown). Scripts: PowerShell scripts assume Windows. Convert scripts to bash for Unix.
 
 **Q: What if I have both Copilot (personal) and workspace installs?**  
-A: Use `-AgentNamePrefix` when installing so the picker shows distinct names such as `cp-qa-tester` and `ws-qa-tester`.
+A: Use `-AgentNamePrefix` and/or `-AgentNameSuffix` when installing so the picker shows distinct names such as `cp-qa-tester`, `ws-qa-tester`, and `qa-tester-claude`.
 
 **Q: How do I update agents after install?**  
 A: Edit `canonical/` → run `build-platforms.ps1` → run install script again with `-Force` flag.

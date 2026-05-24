@@ -13,11 +13,15 @@
 .PARAMETER AgentNamePrefix
     Optional prefix added to installed Copilot/Claude/Cursor agent names.
     Useful when distinguishing variants (for example: cp-, ws-, team-).
+.PARAMETER AgentNameSuffix
+    Optional suffix added to installed Copilot/Claude/Cursor agent names.
+    Useful when distinguishing platform variants (for example: -claude, -copilot).
 .PARAMETER Force
     Overwrite existing files.
 .EXAMPLE
     .\install-workspace.ps1 -Path "C:\projects\myapp" -Platform copilot
     .\install-workspace.ps1 -Path "C:\projects\myapp" -Platform copilot -AgentNamePrefix "ws-"
+    .\install-workspace.ps1 -Path "C:\projects\myapp" -Platform claude -AgentNameSuffix "-claude"
     .\install-workspace.ps1 -Path "C:\projects\myapp" -Platform all -Agents qa-tester,devops
 #>
 param(
@@ -32,12 +36,41 @@ param(
 
     [string]$AgentNamePrefix = "",
 
+    [string]$AgentNameSuffix = "",
+
     [switch]$Force
 )
 
 $ErrorActionPreference = "Stop"
 $root = Split-Path $PSScriptRoot -Parent
 $platformsDir = Join-Path $root "platforms"
+
+function Get-DecoratedFileName {
+    param([string]$FileName, [string]$Prefix, [string]$Suffix)
+
+    if ([string]::IsNullOrWhiteSpace($Prefix) -and [string]::IsNullOrWhiteSpace($Suffix)) {
+        return $FileName
+    }
+
+    $safePrefix = if ([string]::IsNullOrWhiteSpace($Prefix)) { "" } else { $Prefix }
+    $safeSuffix = if ([string]::IsNullOrWhiteSpace($Suffix)) { "" } else { $Suffix }
+
+    if ($FileName -match '^(?<stem>.+?)\.agent\.md$') {
+        return "$safePrefix$($Matches['stem'])$safeSuffix.agent.md"
+    }
+
+    if ($FileName -match '^(?<stem>.+?)\.mdc$') {
+        return "$safePrefix$($Matches['stem'])$safeSuffix.mdc"
+    }
+
+    if ($FileName -match '^(?<stem>.+?)\.md$') {
+        return "$safePrefix$($Matches['stem'])$safeSuffix.md"
+    }
+
+    $extension = [System.IO.Path]::GetExtension($FileName)
+    $stem = [System.IO.Path]::GetFileNameWithoutExtension($FileName)
+    return "$safePrefix$stem$safeSuffix$extension"
+}
 
 if (-not (Test-Path $Path)) {
     Write-Error "Workspace path not found: $Path"
@@ -61,8 +94,8 @@ function Copy-SafeFile {
     Write-Host "  [OK] $Dest" -ForegroundColor Green
 }
 
-function Copy-AgentWithPrefix {
-    param([string]$Source, [string]$Dest, [string]$Prefix)
+function Copy-AgentWithAffixes {
+    param([string]$Source, [string]$Dest, [string]$Prefix, [string]$Suffix)
 
     if ((Test-Path $Dest) -and -not $Force) {
         Write-Host "  [SKIP] Exists: $Dest" -ForegroundColor Yellow
@@ -78,12 +111,14 @@ function Copy-AgentWithPrefix {
     $nameMatch = [regex]::Match($content, '(?m)^name:\s*(.+)$')
     if ($nameMatch.Success) {
         $originalName = $nameMatch.Groups[1].Value.Trim()
-        $updatedName = "$Prefix$originalName"
+        $safePrefix = if ([string]::IsNullOrWhiteSpace($Prefix)) { "" } else { $Prefix }
+        $safeSuffix = if ([string]::IsNullOrWhiteSpace($Suffix)) { "" } else { $Suffix }
+        $updatedName = "$safePrefix$originalName$safeSuffix"
         $content = [regex]::Replace($content, '(?m)^name:\s*.+$', "name: $updatedName", 1)
     }
 
     Set-Content -Path $Dest -Value $content -Encoding UTF8
-    Write-Host "  [OK] $Dest (name prefixed: $Prefix)" -ForegroundColor Green
+    Write-Host "  [OK] $Dest (name affixes: '$Prefix' + '$Suffix')" -ForegroundColor Green
 }
 
 function Should-Include {
@@ -104,11 +139,12 @@ function Install-CopilotWorkspace {
     # Agents
     foreach ($file in (Get-ChildItem "$src\agents\*.agent.md" -ErrorAction SilentlyContinue)) {
         if (Should-Include $file.BaseName) {
-            $dest = Join-Path $Path ".github\agents\$($file.Name)"
-            if ([string]::IsNullOrWhiteSpace($AgentNamePrefix)) {
+            $installedName = Get-DecoratedFileName -FileName $file.Name -Prefix $AgentNamePrefix -Suffix $AgentNameSuffix
+            $dest = Join-Path $Path ".github\agents\$installedName"
+            if ([string]::IsNullOrWhiteSpace($AgentNamePrefix) -and [string]::IsNullOrWhiteSpace($AgentNameSuffix)) {
                 Copy-SafeFile $file.FullName $dest
             } else {
-                Copy-AgentWithPrefix -Source $file.FullName -Dest $dest -Prefix $AgentNamePrefix
+                Copy-AgentWithAffixes -Source $file.FullName -Dest $dest -Prefix $AgentNamePrefix -Suffix $AgentNameSuffix
             }
         }
     }
@@ -139,11 +175,12 @@ function Install-ClaudeWorkspace {
     # Agents
     foreach ($file in (Get-ChildItem "$src\agents\*.md" -ErrorAction SilentlyContinue)) {
         if (Should-Include $file.BaseName) {
-            $dest = Join-Path $Path ".claude\agents\$($file.Name)"
-            if ([string]::IsNullOrWhiteSpace($AgentNamePrefix)) {
+            $installedName = Get-DecoratedFileName -FileName $file.Name -Prefix $AgentNamePrefix -Suffix $AgentNameSuffix
+            $dest = Join-Path $Path ".claude\agents\$installedName"
+            if ([string]::IsNullOrWhiteSpace($AgentNamePrefix) -and [string]::IsNullOrWhiteSpace($AgentNameSuffix)) {
                 Copy-SafeFile $file.FullName $dest
             } else {
-                Copy-AgentWithPrefix -Source $file.FullName -Dest $dest -Prefix $AgentNamePrefix
+                Copy-AgentWithAffixes -Source $file.FullName -Dest $dest -Prefix $AgentNamePrefix -Suffix $AgentNameSuffix
             }
         }
     }
@@ -179,11 +216,12 @@ function Install-CursorWorkspace {
     # .cursor/rules/*.mdc
     foreach ($file in (Get-ChildItem "$src\rules\*.mdc" -ErrorAction SilentlyContinue)) {
         if (Should-Include $file.BaseName) {
-            $dest = Join-Path $Path ".cursor\rules\$($file.Name)"
-            if ([string]::IsNullOrWhiteSpace($AgentNamePrefix)) {
+            $installedName = Get-DecoratedFileName -FileName $file.Name -Prefix $AgentNamePrefix -Suffix $AgentNameSuffix
+            $dest = Join-Path $Path ".cursor\rules\$installedName"
+            if ([string]::IsNullOrWhiteSpace($AgentNamePrefix) -and [string]::IsNullOrWhiteSpace($AgentNameSuffix)) {
                 Copy-SafeFile $file.FullName $dest
             } else {
-                Copy-AgentWithPrefix -Source $file.FullName -Dest $dest -Prefix $AgentNamePrefix
+                Copy-AgentWithAffixes -Source $file.FullName -Dest $dest -Prefix $AgentNamePrefix -Suffix $AgentNameSuffix
             }
         }
     }
