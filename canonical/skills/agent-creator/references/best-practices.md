@@ -1,6 +1,6 @@
 # Best Practices for Agent Creation
 
-Consolidated from official documentation for GitHub Copilot, Claude Code, OpenAI Codex, Cursor, and Windsurf.
+Consolidated from official documentation for GitHub Copilot, Claude Code, and OpenAI Codex.
 
 ---
 
@@ -183,18 +183,6 @@ Specify in the agent file body or let the user's default apply.
 - No separate agent files — sections within the single file
 - No tool configuration — Codex determines tool use from context
 
-### Cursor
-- `.cursorrules` in project root for global rules
-- `.cursor/rules/*.mdc` for scoped rules
-- MDC files use a YAML-like header with `description` and `globs`
-- No native subagent support
-
-### Windsurf
-- `.windsurfrules` in project root
-- Single file combining all instructions and agent guidelines
-- No native subagent support
-- No tool configuration
-
 ---
 
 ## 6. Testing & Evaluation
@@ -251,8 +239,6 @@ Subagents start with fresh context. They don't see the parent's conversation his
 | Copilot | `%APPDATA%\Code\User\prompts\` | `.github/agents/` | Git submodule |
 | Claude Code | `~/.claude/agents/` | `.claude/agents/` | Git submodule |
 | Codex | N/A | `AGENTS.md` | In repo |
-| Cursor | User settings | `.cursor/rules/` | In repo |
-| Windsurf | N/A | `.windsurfrules` | In repo |
 
 ### Cross-Platform Distribution
 Use a canonical source → platform build pipeline to maintain consistency across all platforms without duplicating content.

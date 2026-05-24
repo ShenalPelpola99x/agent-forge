@@ -1,11 +1,11 @@
 ---
 name: agent-creator
-description: "Create high-quality custom agents and subagents for multiple AI platforms (VS Code Copilot, Claude Code, OpenAI Codex, Cursor, Windsurf). Use this skill whenever the user wants to create a new agent, design a subagent, build an agent hierarchy, convert an agent between platforms, or improve an existing agent definition. Also trigger when the user mentions custom agents, agent profiles, subagent configuration, agent.md files, multi-platform agent deployment, or says things like 'I need an agent for...', 'create an agent that...', 'build me an agent'. Even if the user doesn't say 'agent' explicitly but describes a specialized AI persona or coding assistant role, use this skill."
+description: "Create high-quality custom agents and subagents for multiple AI platforms (VS Code Copilot, Claude Code, OpenAI Codex). Use this skill whenever the user wants to create a new agent, design a subagent, build an agent hierarchy, convert an agent between platforms, or improve an existing agent definition. Also trigger when the user mentions custom agents, agent profiles, subagent configuration, agent.md files, multi-platform agent deployment, or says things like 'I need an agent for...', 'create an agent that...', 'build me an agent'. Even if the user doesn't say 'agent' explicitly but describes a specialized AI persona or coding assistant role, use this skill."
 ---
 
 # Agent Creator
 
-Create custom agents for 5 AI platforms from a single canonical source. Follows a canonical-first architecture: author once, generate platform-specific outputs for Copilot, Claude Code, Codex, Cursor, and Windsurf.
+Create custom agents for 3 AI platforms from a single canonical source. Follows a canonical-first architecture: author once, generate platform-specific outputs for Copilot, Claude Code, and Codex.
 
 ## Workflow
 
@@ -18,7 +18,7 @@ Determine how the user wants to proceed:
 2. What specific tasks should it handle? List 3-5 core responsibilities
 3. What tools does it need? (file read/write, terminal, browser, MCP servers, subagents)
 4. What should it NOT do? (boundaries and constraints)
-5. Which platforms do you need? (copilot, claude, codex, cursor, windsurf, or all)
+5. Which platforms do you need? (copilot, claude, codex, or all)
 6. Should it delegate to subagents? If so, which ones?
 7. Any model preference? (opus for complex reasoning, sonnet for balanced, haiku for fast tasks)
 
@@ -152,8 +152,6 @@ Place the agent at the correct platform location:
 | Claude Code (personal) | `~/.claude/agents/<name>.md` |
 | Claude Code (workspace) | `.claude/agents/<name>.md` |
 | Codex | Append to `AGENTS.md` |
-| Cursor | `.cursor/rules/<name>.mdc` |
-| Windsurf | Append to `.windsurfrules` |
 
 ---
 
@@ -164,8 +162,6 @@ Place the agent at the correct platform location:
 | Copilot | `.agent.md` | YAML (`description`, `tools`, `model`) | Array of aliases | `model` or `model[]` |
 | Claude Code | `.md` in `.claude/agents/` | None (conventions in body) | `## Tools` section | `## Model` section |
 | Codex | `AGENTS.md` section | None | Described in prose | N/A |
-| Cursor | `.mdc` | YAML-like header | N/A | N/A |
-| Windsurf | `.windsurfrules` section | None | N/A | N/A |
 
 For full format details, read `references/platform-formats.md`.
 

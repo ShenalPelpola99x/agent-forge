@@ -7,14 +7,14 @@
 .PARAMETER Path
     Path to the target workspace/project directory.
 .PARAMETER Platform
-    Target platform(s): copilot, claude, codex, cursor, windsurf, or all.
+    Target platform(s): copilot, claude, codex, or all.
 .PARAMETER Agents
     Optional. Comma-separated list of agent names to install. If omitted, installs all.
 .PARAMETER AgentNamePrefix
-    Optional prefix added to installed Copilot/Claude/Cursor agent names.
+    Optional prefix added to installed Copilot/Claude agent names.
     Useful when distinguishing variants (for example: cp-, ws-, team-).
 .PARAMETER AgentNameSuffix
-    Optional suffix added to installed Copilot/Claude/Cursor agent names.
+    Optional suffix added to installed Copilot/Claude agent names.
     Useful when distinguishing platform variants (for example: -claude, -copilot).
 .PARAMETER Force
     Overwrite existing files.
@@ -29,7 +29,7 @@ param(
     [string]$Path,
 
     [Parameter(Mandatory)]
-    [ValidateSet("copilot", "claude", "codex", "cursor", "windsurf", "all")]
+    [ValidateSet("copilot", "claude", "codex", "all")]
     [string]$Platform,
 
     [string]$Agents,
@@ -201,46 +201,10 @@ function Install-CodexWorkspace {
     }
 }
 
-# ---------- Cursor ----------
-
-function Install-CursorWorkspace {
-    Write-Host "`n=== Installing Cursor files ===" -ForegroundColor Cyan
-    $src = Join-Path $platformsDir "cursor"
-
-    # .cursorrules
-    $rules = Join-Path $src ".cursorrules"
-    if (Test-Path $rules) {
-        Copy-SafeFile $rules (Join-Path $Path ".cursorrules")
-    }
-
-    # .cursor/rules/*.mdc
-    foreach ($file in (Get-ChildItem "$src\rules\*.mdc" -ErrorAction SilentlyContinue)) {
-        if (Should-Include $file.BaseName) {
-            $installedName = Get-DecoratedFileName -FileName $file.Name -Prefix $AgentNamePrefix -Suffix $AgentNameSuffix
-            $dest = Join-Path $Path ".cursor\rules\$installedName"
-            if ([string]::IsNullOrWhiteSpace($AgentNamePrefix) -and [string]::IsNullOrWhiteSpace($AgentNameSuffix)) {
-                Copy-SafeFile $file.FullName $dest
-            } else {
-                Copy-AgentWithAffixes -Source $file.FullName -Dest $dest -Prefix $AgentNamePrefix -Suffix $AgentNameSuffix
-            }
-        }
-    }
-}
-
-# ---------- Windsurf ----------
-
-function Install-WindsurfWorkspace {
-    Write-Host "`n=== Installing Windsurf files ===" -ForegroundColor Cyan
-    $rules = Join-Path $platformsDir "windsurf\.windsurfrules"
-    if (Test-Path $rules) {
-        Copy-SafeFile $rules (Join-Path $Path ".windsurfrules")
-    }
-}
-
 # ---------- Main ----------
 
 $platforms = if ($Platform -eq "all") {
-    @("copilot", "claude", "codex", "cursor", "windsurf")
+    @("copilot", "claude", "codex")
 } else {
     @($Platform)
 }
@@ -250,8 +214,6 @@ foreach ($p in $platforms) {
         "copilot"  { Install-CopilotWorkspace }
         "claude"   { Install-ClaudeWorkspace }
         "codex"    { Install-CodexWorkspace }
-        "cursor"   { Install-CursorWorkspace }
-        "windsurf" { Install-WindsurfWorkspace }
     }
 }
 

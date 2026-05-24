@@ -3,7 +3,7 @@
     Builds platform-specific agent/skill/instruction outputs from canonical sources.
 .DESCRIPTION
     Reads canonical/ and generates platform-specific files in platforms/ for
-    Copilot, Claude Code, Codex, Cursor, and Windsurf.
+    Copilot, Claude Code, and Codex.
 .PARAMETER Agent
     Optional. Build only a specific agent by name. If omitted, builds all.
 .PARAMETER Force
@@ -111,25 +111,12 @@ $body
     $claudeContent | Set-Content $claudePath -Encoding UTF8
     Write-Host "  ✅ Claude: agents/$name.md" -ForegroundColor Green
 
-    # --- Cursor (.mdc) ---
-    $cursorContent = @"
----
-description: "$($fm["description"])"
-alwaysApply: false
----
-
-$body
-"@
-    $cursorPath = Join-Path $platforms "cursor\rules\$name.mdc"
-    $cursorContent | Set-Content $cursorPath -Encoding UTF8
-    Write-Host "  ✅ Cursor: rules/$name.mdc" -ForegroundColor Green
-
     # Registry entry
     $registry.agents += @{
         name = $name
         version = if ($fm["version"]) { $fm["version"] } else { "1.0.0" }
         description = $fm["description"]
-        platforms = @("copilot", "claude", "codex", "cursor", "windsurf")
+        platforms = @("copilot", "claude", "codex")
         tags = if ($fm["tags"] -is [array]) { $fm["tags"] } else { @() }
         requires_skills = if ($fm["requires_skills"] -is [array]) { $fm["requires_skills"] } else { @() }
         requires_mcp = if ($fm["requires_mcp"] -is [array]) { $fm["requires_mcp"] } else { @() }
@@ -148,21 +135,6 @@ if ($agentFiles.Count -gt 0) {
     $codexPath = Join-Path $platforms "codex\AGENTS.md"
     $codexContent | Set-Content $codexPath -Encoding UTF8
     Write-Host "  ✅ Codex: AGENTS.md" -ForegroundColor Green
-}
-
-# --- Windsurf (.windsurfrules) ---
-if ($agentFiles.Count -gt 0) {
-    $windsurfContent = "# Project Rules and Agents`n`n"
-    foreach ($file in $agentFiles) {
-        $content = Get-Content $file.FullName -Raw
-        $fm = Parse-Frontmatter $content
-        $body = Get-Body $content
-        $name = if ($fm["name"]) { $fm["name"] } else { $file.BaseName }
-        $windsurfContent += "## Agent: $name`n`n$body`n`n---`n`n"
-    }
-    $windsurfPath = Join-Path $platforms "windsurf\.windsurfrules"
-    $windsurfContent | Set-Content $windsurfPath -Encoding UTF8
-    Write-Host "  ✅ Windsurf: .windsurfrules" -ForegroundColor Green
 }
 
 # ---------- Build Instructions ----------

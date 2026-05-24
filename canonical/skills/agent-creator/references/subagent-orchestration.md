@@ -111,8 +111,8 @@ Or use unrestricted delegation:
 
 Claude Code subagents can run in foreground (blocking) or background (concurrent).
 
-### Codex / Cursor / Windsurf
-These platforms don't have native subagent support. For these, include all personas in the single instruction file and let the model switch between roles internally.
+### Codex
+Codex doesn't have native subagent support. Include all personas in the single instruction file and let the model switch between roles internally.
 
 ---
 
